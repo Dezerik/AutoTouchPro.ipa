@@ -1,0 +1,27 @@
+
+name: AutoTouchPro
+
+options:
+  bundleIdPrefix: com.autotouchpro
+  deploymentTarget:
+    iOS: "16.0"
+
+targets:
+  AutoTouchPro:
+    type: application
+    platform: iOS
+    sources:
+      - path: .
+        includes:
+          - "*.swift"
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.autotouchpro.app
+        PRODUCT_NAME: AutoTouchPro
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "2"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: AutoTouch Pro
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
