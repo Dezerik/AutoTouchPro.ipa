@@ -11,6 +11,16 @@ jobs:
     runs-on: macos-15
 
     steps:
+      - name: Free Disk Space
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /Library/Developer/CoreSimulator
+          sudo rm -rf /Applications/Xcode_16.0.app /Applications/Xcode_16.1.app /Applications/Xcode_16.2.app /Applications/Xcode_16.3.app
+          sudo rm -rf /Users/runner/Library/Caches/*
+          echo "Disk space after cleanup:"
+          df -h
+
       - name: Download source
         uses: actions/checkout@v4
 
@@ -22,8 +32,8 @@ jobs:
 
       - name: Build iOS app
         run: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData
           xcodebuild \
-           rm -rf ~/Library/Developer/Xcode/DerivedData
             -project AutoTouchPro.xcodeproj \
             -scheme AutoTouchPro \
             -configuration Release \
@@ -31,8 +41,11 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
+
       - name: Package IPA
         run: |
+          mkdir -p Payload
+
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/AutoTouchPro.app Payload/
           zip -r AutoTouchPro.ipa Payload
