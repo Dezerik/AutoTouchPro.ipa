@@ -23,6 +23,7 @@ jobs:
       - name: Build iOS app
         run: |
           xcodebuild \
+           rm -rf ~/Library/Developer/Xcode/DerivedData
             -project AutoTouchPro.xcodeproj \
             -scheme AutoTouchPro \
             -configuration Release \
@@ -30,7 +31,6 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build
-
       - name: Package IPA
         run: |
           mkdir -p Payload
