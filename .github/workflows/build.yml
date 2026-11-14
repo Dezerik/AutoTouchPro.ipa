@@ -29,26 +29,18 @@ jobs:
 
       - name: Generate Xcode project
         run: xcodegen generate
-
+        
       - name: Build iOS app
         run: |
           rm -rf ~/Library/Developer/Xcode/DerivedData
-          xcodebuild \
-            -project AutoTouchPro.xcodeproj \
-            -scheme AutoTouchPro \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+          xcodebuild -project AutoTouchPro.xcodeproj -scheme AutoTouchPro -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
 
       - name: Package IPA
         run: |
           mkdir -p Payload
-
-          mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/AutoTouchPro.app Payload/
           zip -r AutoTouchPro.ipa Payload
+
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
