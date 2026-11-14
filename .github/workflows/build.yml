@@ -1,26 +1,15 @@
 name: Build AutoTouch Pro IPA
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-15
 
     steps:
-      - name: Free Disk Space
-        run: |
-          echo "Disk space before cleanup:"
-          df -h
-          sudo rm -rf /Library/Developer/CoreSimulator
-          sudo rm -rf /Applications/Xcode_16.0.app /Applications/Xcode_16.1.app /Applications/Xcode_16.2.app /Applications/Xcode_16.3.app
-          sudo rm -rf /Users/runner/Library/Caches/*
-          echo "Disk space after cleanup:"
-          df -h
-
       - name: Download source
         uses: actions/checkout@v4
 
@@ -29,11 +18,18 @@ jobs:
 
       - name: Generate Xcode project
         run: xcodegen generate
-        
+
       - name: Build iOS app
         run: |
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          xcodebuild -project AutoTouchPro.xcodeproj -scheme AutoTouchPro -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          xcodebuild \
+            -project AutoTouchPro.xcodeproj \
+            -scheme AutoTouchPro \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
       - name: Package IPA
         run: |
@@ -41,9 +37,8 @@ jobs:
           cp -R build/Build/Products/Release-iphoneos/AutoTouchPro.app Payload/
           zip -r AutoTouchPro.ipa Payload
 
-
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: AutoTouchPro-IPA
+          name: AutoTouchPro.ipa
           path: AutoTouchPro.ipa
