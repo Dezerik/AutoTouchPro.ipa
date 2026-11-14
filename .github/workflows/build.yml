@@ -10,14 +10,26 @@ jobs:
     runs-on: macos-15
 
     steps:
-      - name: Download source
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: |
+          brew update
+          brew install xcodegen
+
+      - name: Verify project config exists
+        run: |
+          ls -la
+          test -f project.yml && echo "project.yml found" || echo "project.yml missing"
 
       - name: Generate Xcode project
         run: xcodegen generate
+
+      - name: Verify generated Xcode project
+        run: |
+          ls -la
+          test -d AutoTouchPro.xcodeproj && echo "Xcode project exists" || { echo "Xcode project missing"; exit 1; }
 
       - name: Build iOS app
         run: |
@@ -26,18 +38,17 @@ jobs:
             -scheme AutoTouchPro \
             -configuration Release \
             -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build \
+            -derivedDataPath "$RUNNER_TEMP/derivedData" \
             CODE_SIGNING_ALLOWED=NO \
             build
 
       - name: Package IPA
         run: |
           mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/AutoTouchPro.app Payload/
+          cp -R "$RUNNER_TEMP/derivedData/Build/Products/Release-iphoneos/AutoTouchPro.app" Payload/
           zip -r AutoTouchPro.ipa Payload
 
-      - name: Upload IPA
+      - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: AutoTouchPro.ipa
