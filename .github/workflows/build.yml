@@ -1,9 +1,12 @@
-name: Build AutoTouch Pro IPA
+name: Build unsigned IPA for eSign
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -14,25 +17,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install XcodeGen
-        run: |
-          brew update
-          brew install xcodegen
+        run: brew install xcodegen
 
-      - name: Verify project config exists
-        run: |
-          ls -la
-          test -f project.yml && echo "project.yml found" || echo "project.yml missing"
+      - name: Verify project configuration
+        run: test -f project.yml
 
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Verify generated Xcode project
+      - name: Build unsigned iOS app
         run: |
-          ls -la
-          test -d AutoTouchPro.xcodeproj && echo "Xcode project exists" || { echo "Xcode project missing"; exit 1; }
+          set -euo pipefail
 
-      - name: Build iOS app
-        run: |
           xcodebuild \
             -project AutoTouchPro.xcodeproj \
             -scheme AutoTouchPro \
@@ -42,14 +38,32 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Package IPA
+      - name: Package and validate IPA
         run: |
-          mkdir -p Payload
-          cp -R "$RUNNER_TEMP/derivedData/Build/Products/Release-iphoneos/AutoTouchPro.app" Payload/
-          zip -r AutoTouchPro.ipa Payload
+          set -euo pipefail
+
+          APP_PATH="$RUNNER_TEMP/derivedData/Build/Products/Release-iphoneos/AutoTouchPro.app"
+          PACKAGE_DIR="$RUNNER_TEMP/ipa-package"
+
+          test -d "$APP_PATH" || { echo "Built app not found: $APP_PATH"; exit 1; }
+          test -s "$APP_PATH/Info.plist" || { echo "App Info.plist is missing or empty"; exit 1; }
+          test -s "$APP_PATH/AutoTouchPro" || { echo "App executable is missing or empty"; exit 1; }
+
+          rm -rf "$PACKAGE_DIR"
+          mkdir -p "$PACKAGE_DIR/Payload"
+          ditto "$APP_PATH" "$PACKAGE_DIR/Payload/AutoTouchPro.app"
+
+          cd "$PACKAGE_DIR"
+          /usr/bin/ditto -c -k --sequesterRsrc Payload "$GITHUB_WORKSPACE/AutoTouchPro.ipa"
+
+          unzip -tq "$GITHUB_WORKSPACE/AutoTouchPro.ipa"
+          unzip -l "$GITHUB_WORKSPACE/AutoTouchPro.ipa" | grep -q 'Payload/AutoTouchPro.app/Info.plist'
+
+          ls -lh "$GITHUB_WORKSPACE/AutoTouchPro.ipa"
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AutoTouchPro.ipa
+          name: AutoTouchPro-unsigned-IPA
           path: AutoTouchPro.ipa
+          if-no-files-found: error
